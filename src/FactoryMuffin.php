@@ -243,12 +243,20 @@ class FactoryMuffin
             $value = $this->factory->generate($kind, $model, $this);
 
             $setter = 'set'.ucfirst(static::camelize($key));
-
+            
             // check if there is a setter and use it instead
             if (method_exists($model, $setter) && is_callable([$model, $setter])) {
                 $model->$setter($value);
             } else {
-                $model->$key = $value;
+                $refClass = new \ReflectionClass($model);
+                $refProperty = $refClass->getProperty($key);
+                
+                if($refProperty->isPublic()) {
+                    $model->$key = $value;
+                } else {
+                    $refProperty->setAccessible(true);
+                    $refProperty->setValue($model, $value);
+                }
             }
         }
     }
